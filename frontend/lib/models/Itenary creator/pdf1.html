@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ayubowan Travels – Itinerary Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      .break-inside-avoid {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .page-footer {
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-align: center;
+        margin-top: 2rem;
+        padding-bottom: 1rem;
+      }
+      textarea {
+        resize: vertical;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 p-4">
+    <div class="max-w-5xl mx-auto">
+      <h1 class="text-3xl font-bold text-center mb-6 text-blue-700">
+        Ayubowan Travels – Itinerary Builder
+      </h1>
+
+      <form id="itineraryForm" class="bg-white p-6 rounded-xl shadow-md space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input
+            id="tourName"
+            placeholder="Tour Name"
+            required
+            class="p-2 border rounded"
+          />
+          <input
+            id="customerName"
+            placeholder="Customer Name"
+            required
+            class="p-2 border rounded"
+          />
+          <input
+            id="dateRange"
+            placeholder="Date Range (e.g. 15 Jul – 20 Jul 2025)"
+            required
+            class="p-2 border rounded col-span-2"
+          />
+        </div>
+
+        <div class="border p-4 rounded-lg bg-yellow-50">
+          <h2 class="text-lg font-bold mb-2">Quotation – (U.S. DOLLARS)</h2>
+          <div id="quotationContainer" class="space-y-4"></div>
+          <button
+            type="button"
+            onclick="addQuotationItem()"
+            class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-sm"
+          >
+            + Add Quotation Item
+          </button>
+        </div>
+
+        <div class="border p-4 rounded-lg bg-gray-50">
+          <h2 class="text-lg font-bold mb-2">Conditions Section</h2>
+          <div id="conditionsContainer" class="space-y-4"></div>
+          <button
+            type="button"
+            onclick="addConditionItem()"
+            class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-sm"
+          >
+            + Add Condition Block
+          </button>
+        </div>
+
+        <div id="daysContainer" class="space-y-4"></div>
+
+        <div class="flex gap-3 flex-wrap">
+          <button
+            type="button"
+            onclick="addDay()"
+            class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-2xl"
+          >
+            + Add Day
+          </button>
+          <button
+            type="submit"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-2xl"
+          >
+            Generate Itinerary
+          </button>
+        </div>
+      </form>
+
+      <div id="itineraryPreview" class="mt-10"></div>
+      <div class="text-center mt-4">
+        <button
+          onclick="downloadPDF()"
+          class="bg-pink-600 hover:bg-pink-700 text-white px-6 py-2 rounded-2xl"
+        >
+          Download PDF
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const colors = ["blue", "pink", "green", "amber", "purple"];
+      let dayCount = 0;
+
+      function addDay() {
+        const div = document.createElement("div");
+        div.className = "p-4 border rounded-lg bg-gray-50 relative";
+        div.innerHTML = `
+          <button type="button" onclick="this.parentElement.remove()" class="absolute top-2 right-2 bg-red-100 hover:bg-red-200 text-red-800 px-2 py-1 rounded-full text-xs">Delete</button>
+          <h2 class="text-lg font-semibold mb-2">Day ${++dayCount}</h2>
+          <input placeholder="Day Title" class="w-full p-2 border rounded mb-2 day-title"/>
+          <textarea placeholder="Itinerary bullet points – one per line" rows="4" class="w-full p-2 border rounded mb-2 day-items"></textarea>
+          <textarea placeholder="Meal plan – one per line" rows="3" class="w-full p-2 border rounded mb-2 day-meals"></textarea>
+          <select class="p-2 border rounded mb-2 meal-color">${colors
+            .map((c) => `<option value="text-${c}-600">${c}</option>`)
+            .join("")}</select>
+          <input placeholder="Hotel info" class="w-full p-2 border rounded mb-2 day-hotel"/>
+          <input placeholder="Image URLs (comma separated)" class="w-full p-2 border rounded mb-2 day-images"/>
+          <label class="text-sm font-medium mr-2">Text color:</label>
+          <select class="p-2 border rounded day-color">${colors
+            .map((c) => `<option value="text-${c}-600">${c}</option>`)
+            .join("")}</select>
+        `;
+        document.getElementById("daysContainer").appendChild(div);
+      }
+
+      function addQuotationItem() {
+        const div = document.createElement("div");
+        div.className = "border p-3 rounded bg-white relative";
+        div.innerHTML = `
+          <button type="button" onclick="this.parentElement.remove()" class="absolute top-2 right-2 bg-red-100 hover:bg-red-200 text-red-800 px-2 py-1 rounded-full text-xs">Delete</button>
+          <input placeholder="Price Description" class="w-full p-2 border rounded mb-2 quote-desc text-lg font-semibold"/>
+          <input placeholder="Price (e.g. USD 3960.00 per person)" class="w-full p-2 border rounded mb-2 quote-price text-lg font-bold"/>
+        `;
+        document.getElementById("quotationContainer").appendChild(div);
+      }
+
+      function addConditionItem() {
+        const div = document.createElement("div");
+        div.className = "border p-3 rounded bg-white relative";
+        div.innerHTML = `
+          <button type="button" onclick="this.parentElement.remove()" class="absolute top-2 right-2 bg-red-100 hover:bg-red-200 text-red-800 px-2 py-1 rounded-full text-xs">Delete</button>
+          <input placeholder="Condition Header" class="w-full p-2 border rounded mb-2 condition-header"/>
+          <input type="color" class="condition-color mb-2"/>
+          <textarea placeholder="Bullet points (one per line)" rows="3" class="w-full p-2 border rounded condition-bullets"></textarea>
+        `;
+        document.getElementById("conditionsContainer").appendChild(div);
+      }
+
+      document.getElementById("itineraryForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+        const tour = document.getElementById("tourName").value;
+        const customer = document.getElementById("customerName").value;
+        const dateRange = document.getElementById("dateRange").value;
+        const days = document.querySelectorAll("#daysContainer > div");
+        const quotes = document.querySelectorAll("#quotationContainer > div");
+        const conditions = document.querySelectorAll("#conditionsContainer > div");
+
+        let html = `<div id="itinerary" class="bg-white p-8 rounded-xl shadow-xl text-gray-800">`;
+        html += `<h1 class="text-3xl font-bold text-blue-600 mb-2">Ayubowan Travels</h1>`;
+        html += `<p class="text-xl font-semibold">Tour: <span class="text-pink-600">${tour}</span></p>`;
+        html += `<p class="text-sm text-gray-600 mb-6">Customer: ${customer} | ${dateRange}</p>`;
+
+        days.forEach((day, idx) => {
+          const title = day.querySelector(".day-title").value;
+          const items = day
+            .querySelector(".day-items")
+            .value.split("\n")
+            .map((i) => `<li>${i}</li>`)
+            .join("");
+          const meals = day
+            .querySelector(".day-meals")
+            .value.split("\n")
+            .map((m) => `<li class="${day.querySelector(".meal-color").value}">${m}</li>`)
+            .join("");
+          const hotel = day.querySelector(".day-hotel").value;
+          const images = day
+            .querySelector(".day-images")
+            .value.split(",")
+            .map((u) => u.trim())
+            .filter(Boolean)
+            .map((u) => `<img src="${u}" class="w-full h-32 object-cover rounded-lg shadow"/>`)
+            .join("");
+          const color = day.querySelector(".day-color").value;
+
+          html += `<div class="mb-8 break-inside-avoid">`;
+          html += `<h2 class="text-xl font-bold ${color}">Day ${idx + 1}: ${title}</h2>`;
+          html += `<ul class="list-disc pl-5 text-sm">${items}</ul>`;
+          if (meals)
+            html += `<p class="mt-2 font-semibold text-sm">Meals:</p><ul class="list-disc pl-5 text-sm">${meals}</ul>`;
+          if (hotel) html += `<p class="italic text-sm mt-1">Hotel: ${hotel}</p>`;
+          if (images) html += `<div class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">${images}</div>`;
+          html += `</div>`;
+        });
+
+        if (quotes.length > 0) {
+          html += `<div class="break-inside-avoid border border-yellow-400 bg-yellow-50 p-4 rounded-lg mt-8">`;
+          html += `<h2 class="text-xl font-bold mb-2">Quotation</h2>`;
+          quotes.forEach((q) => {
+            const desc = q.querySelector(".quote-desc").value;
+            const price = q.querySelector(".quote-price").value;
+
+            html += `
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+                <p class="text-lg sm:text-xl font-bold max-w-full">${desc}</p>
+                <p class="text-lg sm:text-xl font-bold text-center text-gray-900">${price}</p>
+              </div>
+            `;
+          });
+          html += `</div>`;
+        }
+
+        conditions.forEach((c) => {
+          const header = c.querySelector(".condition-header").value;
+          const color = c.querySelector(".condition-color").value;
+          const bullets = c
+            .querySelector(".condition-bullets")
+            .value.split("\n")
+            .map((b) => `<li>${b}</li>`)
+            .join("");
+          html += `<div class="mt-6 break-inside-avoid">
+            <h3 class="text-lg font-bold mb-2" style="color:${color}">${header}</h3>
+            <ul class="list-disc pl-5 text-sm text-gray-700">${bullets}</ul>
+          </div>`;
+        });
+
+        html += `<div class="page-footer">📍 Ayubowan Travels | +94 77 123 4567 | info@ayubowan.lk</div></div>`;
+
+        document.getElementById("itineraryPreview").innerHTML = html;
+      });
+
+      async function inlineImages(container) {
+        const imgs = container.querySelectorAll("img");
+        const promises = [...imgs].map(async (img) => {
+          if (img.src.startsWith("data:")) return; // already inlined
+          try {
+            const res = await fetch(img.src, { mode: "cors" });
+            const blob = await res.blob();
+            const reader = new FileReader();
+            img.crossOrigin = "anonymous";
+            return new Promise((resolve) => {
+              reader.onloadend = () => {
+                img.src = reader.result; // replace with Base64
+                resolve();
+              };
+              reader.readAsDataURL(blob);
+            });
+          } catch (e) {
+            console.warn("Image inline failed:", img.src, e);
+          }
+        });
+        await Promise.all(promises);
+      }
+
+      async function downloadPDF() {
+        const el = document.getElementById("itinerary");
+        if (!el) return alert("Generate the itinerary first!");
+
+        await inlineImages(el);
+
+        html2pdf()
+          .set({
+            margin: [10, 10, 20, 10],
+            filename: "ayubowan_itinerary.pdf",
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: {
+              scale: 2,
+              useCORS: true,
+              allowTaint: false,
+              scrollY: 0,
+            },
+            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+            pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+          })
+          .from(el)
+          .save();
+      }
+    </script>
+  </body>
+</html>

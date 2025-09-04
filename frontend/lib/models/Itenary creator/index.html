@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Itinerary Maker</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.min.js"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #6B46C1, #2E7D32);
+      min-height: 100vh;
+      font-family: 'Arial', sans-serif;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 1rem;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+    .preview-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .preview-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+    .btn-generate {
+      background: linear-gradient(to right, #6B46C1, #D81B60);
+      transition: all 0.3s ease;
+    }
+    .btn-generate:hover {
+      background: linear-gradient(to right, #D81B60, #6B46C1);
+      transform: scale(1.05);
+    }
+    input, textarea {
+      transition: border-color 0.3s ease;
+    }
+    input:focus, textarea:focus {
+      border-color: #D81B60;
+      box-shadow: 0 0 5px rgba(216, 27, 96, 0.5);
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center p-4">
+  <div class="container max-w-4xl p-6">
+    <h1 class="text-3xl font-bold text-center text-purple-900 mb-6">Itinerary Maker</h1>
+    <form id="itineraryForm" class="space-y-6">
+      <div class="flex flex-col space-y-2">
+        <label for="tourName" class="text-lg font-semibold text-purple-900">Tour Name</label>
+        <input type="text" id="tourName" placeholder="e.g., Sri Lanka Express" class="p-2 border rounded-md focus:outline-none">
+      </div>
+      <div class="flex flex-col space-y-2">
+        <label for="tourDuration" class="text-lg font-semibold text-purple-900">Tour Duration</label>
+        <input type="text" id="tourDuration" placeholder="e.g., 13 Days / 12 Nights" class="p-2 border rounded-md focus:outline-none">
+      </div>
+      <div id="daysContainer" class="space-y-4">
+        <div class="day-section border p-4 rounded-md bg-gray-50">
+          <h3 class="text-lg font-semibold text-purple-900">Day 1</h3>
+          <div class="flex flex-col space-y-2">
+            <label for="day1Date" class="text-sm font-medium text-purple-900">Date</label>
+            <input type="date" id="day1Date" class="p-2 border rounded-md focus:outline-none">
+          </div>
+          <div class="flex flex-col space-y-2">
+            <label for="day1Title" class="text-sm font-medium text-purple-900">Title</label>
+            <input type="text" id="day1Title" placeholder="e.g., Airport - Galle - Weligama" class="p-2 border rounded-md focus:outline-none">
+          </div>
+          <div class="flex flex-col space-y-2">
+            <label for="day1Description" class="text-sm font-medium text-purple-900">Description</label>
+            <textarea id="day1Description" placeholder="e.g., Arrival at Colombo International Airport, transfer to Galle..." class="p-2 border rounded-md focus:outline-none h-32"></textarea>
+          </div>
+          <div class="flex flex-col space-y-2">
+            <label for="day1Hotel" class="text-sm font-medium text-purple-900">Hotel</label>
+            <input type="text" id="day1Hotel" placeholder="e.g., Weligama Bay Marriott Resort & Spa" class="p-2 border rounded-md focus:outline-none">
+          </div>
+          <div class="flex flex-col space-y-2">
+            <label for="day1Images" class="text-sm font-medium text-purple-900">Images</label>
+            <input type="file" id="day1Images" accept="image/*" multiple class="p-2 border rounded-md">
+          </div>
+        </div>
+      </div>
+      <button type="button" id="addDay" class="bg-purple-900 text-white px-4 py-2 rounded-md hover:bg-pink-600 transition">Add Another Day</button>
+      <button type="button" id="previewItinerary" class="bg-purple-900 text-white px-4 py-2 rounded-md hover:bg-pink-600 transition">Preview Itinerary</button>
+    </form>
+    <div id="preview" class="mt-6 hidden">
+      <h2 class="text-2xl font-bold text-purple-900 mb-4">Itinerary Preview</h2>
+      <div id="previewContent" class="space-y-4"></div>
+      <button id="generatePDF" class="btn-generate text-white px-6 py-3 rounded-md mt-4 font-semibold">Generate PDF</button>
+    </div>
+  </div>
+
+  <script>
+    let dayCount = 1;
+
+    document.getElementById('addDay').addEventListener('click', () => {
+      dayCount++;
+      const daySection = document.createElement('div');
+      daySection.className = 'day-section border p-4 rounded-md bg-gray-50';
+      daySection.innerHTML = `
+        <h3 class="text-lg font-semibold text-purple-900">Day ${dayCount}</h3>
+        <div class="flex flex-col space-y-2">
+          <label for="day${dayCount}Date" class="text-sm font-medium text-purple-900">Date</label>
+          <input type="date" id="day${dayCount}Date" class="p-2 border rounded-md focus:outline-none">
+        </div>
+        <div class="flex flex-col space-y-2">
+          <label for="day${dayCount}Title" class="text-sm font-medium text-purple-900">Title</label>
+          <input type="text" id="day${dayCount}Title" placeholder="e.g., Yala - Ella" class="p-2 border rounded-md focus:outline-none">
+        </div>
+        <div class="flex flex-col space-y-2">
+          <label for="day${dayCount}Description" class="text-sm font-medium text-purple-900">Description</label>
+          <textarea id="day${dayCount}Description" placeholder="e.g., Breakfast at hotel, visit Little Adam's Peak..." class="p-2 border rounded-md focus:outline-none h-32"></textarea>
+        </div>
+        <div class="flex flex-col space-y-2">
+          <label for="day${dayCount}Hotel" class="text-sm font-medium text-purple-900">Hotel</label>
+          <input type="text" id="day${dayCount}Hotel" placeholder="e.g., 98 Acres, Ella" class="p-2 border rounded-md focus:outline-none">
+        </div>
+        <div class="flex flex-col space-y-2">
+          <label for="day${dayCount}Images" class="text-sm font-medium text-purple-900">Images</label>
+          <input type="file" id="day${dayCount}Images" accept="image/*" multiple class="p-2 border rounded-md">
+        </div>
+      `;
+      document.getElementById('daysContainer').appendChild(daySection);
+    });
+
+    document.getElementById('previewItinerary').addEventListener('click', () => {
+      const tourName = document.getElementById('tourName').value || 'Unnamed Tour';
+      const tourDuration = document.getElementById('tourDuration').value || 'Unknown Duration';
+      let previewHTML = `
+        <div class="bg-white p-6 rounded-md shadow-md">
+          <h2 class="text-2xl font-bold text-purple-900">${tourName}</h2>
+          <p class="text-gray-600">${tourDuration}</p>
+        </div>
+      `;
+      for (let i = 1; i <= dayCount; i++) {
+        const date = document.getElementById(`day${i}Date`)?.value || 'No Date';
+        const title = document.getElementById(`day${i}Title`)?.value || 'No Title';
+        const description = document.getElementById(`day${i}Description`)?.value || 'No Description';
+        const hotel = document.getElementById(`day${i}Hotel`)?.value || 'No Hotel';
+        const imageInput = document.getElementById(`day${i}Images`);
+        const images = imageInput?.files ? Array.from(imageInput.files).map(file => URL.createObjectURL(file)) : ['https://via.placeholder.com/150x100?text=Day+'+i];
+        previewHTML += `
+          <div class="preview-card bg-white p-6 rounded-md shadow-md">
+            <h3 class="text-lg font-semibold text-purple-900">Day ${i} - ${title} (${date})</h3>
+            <div class="grid grid-cols-2 gap-2 my-4">
+              ${images.map(img => `<img src="${img}" alt="Day ${i} Image" class="w-full h-24 object-cover rounded-md">`).join('')}
+            </div>
+            <p class="text-gray-700">${description}</p>
+            <p class="text-gray-600 mt-2"><strong>Hotel:</strong> ${hotel}</p>
+          </div>
+        `;
+      }
+      document.getElementById('previewContent').innerHTML = previewHTML;
+      document.getElementById('preview').classList.remove('hidden');
+    });
+
+    document.getElementById('generatePDF').addEventListener('click', async () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 20;
+
+      // Company Header with Logo on First Page
+      doc.setFillColor(107, 70, 193); // Purple
+      doc.rect(0, 0, 210, 40, 'F');
+      doc.setTextColor(216, 27, 96); // Pink
+      doc.setFontSize(18);
+      doc.text('Ayubowan Travels International', 10, 15);
+      doc.setFontSize(10);
+      doc.setTextColor(46, 125, 50); // Green
+      doc.text('#49, Gemunu Mawatha, Hunupitiya, Wattala', 10, 25);
+      doc.text('Mob: (+94) 077 41 44 396 | Tel: 0117 202 630 | Fax: 0112 581 900', 10, 30);
+      doc.text('E-m: kapila@ayubowaninternational.com | Web: http://www.ayubowaninternational.com', 10, 35);
+
+      // Add Logo (Placeholder - replace with actual logo URL or base64)
+      let logoImg;
+      try {
+        logoImg = await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.src = 'logo.jpg';
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+        });
+        doc.addImage(logoImg, 'JPEG', 150, 5, 50, 30); // First page
+      } catch (e) {
+        // Logo failed to load, skip adding it
+      }
+
+      y = 50;
+
+      // Tour Details
+      doc.setFontSize(16);
+      doc.setTextColor(107, 70, 193); // Purple
+      doc.text(document.getElementById('tourName').value || 'Unnamed Tour', 10, y);
+      y += 10;
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text(document.getElementById('tourDuration').value || 'Unknown Duration', 10, y);
+      y += 10;
+
+      // Get the template and compile it
+      const source = document.getElementById('pdf-day-template').innerHTML;
+      const dayTemplate = Handlebars.compile(source);
+
+      // Days
+      for (let i = 1; i <= dayCount; i++) {
+        if (y > 260) {
+          doc.addPage();
+          y = 20;
+          // Header with Logo on New Pages
+          doc.setFillColor(107, 70, 193);
+          doc.rect(0, 0, 210, 20, 'F');
+          doc.setTextColor(216, 27, 96);
+          doc.setFontSize(12);
+          doc.text('Ayubowan Travels International', 10, 15);
+          try {
+            doc.addImage(logoImg, 'JPEG', 150, 5, 50, 15); // Subsequent pages
+          } catch (e) {
+            // Logo failed to load on subsequent pages, skip adding it
+          }
+        }
+        const date = document.getElementById(`day${i}Date`)?.value || 'No Date';
+        const title = document.getElementById(`day${i}Title`)?.value || 'No Title';
+        const description = document.getElementById(`day${i}Description`)?.value || 'No Description';
+        const hotel = document.getElementById(`day${i}Hotel`)?.value || 'No Hotel';
+        const imageInput = document.getElementById(`day${i}Images`);
+        const images = imageInput?.files ? Array.from(imageInput.files) : [];
+
+        // Prepare data for Handlebars
+        const dayData = {
+          day: i,
+          title,
+          date,
+          images: images.map(() => ''), // You can handle images separately in jsPDF
+          description,
+          hotel
+        };
+
+        // Generate the text using Handlebars
+        const dayText = dayTemplate(dayData);
+
+        // Add the text to the PDF
+        doc.setFontSize(14);
+        doc.setTextColor(107, 70, 193); // Purple
+        doc.text(dayText, 10, y);
+        y += 10 + (dayText.split('\n').length * 6);
+
+        // (Handle images as before, using jsPDF's addImage)
+        const imageWidth = 90; // Width for each image
+        const imageHeight = 50; // Height for each image
+        for (let j = 0; j < images.length; j++) {
+          const file = images[j];
+          if (y > 260 - imageHeight && j % 2 === 0) {
+            y = 20; // Move to next column or page if needed
+            if (j > 0) doc.addPage();
+            doc.setFillColor(107, 70, 193);
+            doc.rect(0, 0, 210, 20, 'F');
+            doc.setTextColor(216, 27, 96);
+            doc.setFontSize(12);
+            doc.text('Ayubowan Travels International', 10, 15);
+            try {
+              doc.addImage(logoImg, 'JPEG', 150, 5, 50, 15); // Smaller logo on subsequent pages
+            } catch (e) {
+              // Logo failed to load on subsequent pages, skip adding it
+            }
+          }
+          const x = 10 + (j % 2) * (imageWidth + 10); // 2-column layout with 10px gap
+          if (j > 0 && j % 2 === 0) y += imageHeight + 10; // Move down after second image
+          try {
+            doc.addImage(URL.createObjectURL(file), 'JPEG', x, y, imageWidth, imageHeight);
+          } catch (e) {
+            console.error('Error adding image:', e);
+          }
+        }
+        y += imageHeight + 10;
+
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        const descLines = doc.splitTextToSize(description, 180);
+        doc.text(descLines, 10, y);
+        y += descLines.length * 6 + 5;
+        doc.text(`Hotel: ${hotel}`, 10, y);
+        y += 15;
+      }
+
+      // Footer
+      doc.setFillColor(107, 70, 193);
+      doc.rect(0, 280, 210, 17, 'F');
+      doc.setTextColor(216, 27, 96);
+      doc.setFontSize(10);
+      doc.text('Ayubowan Travels International - Crafting Your Journey', 10, 290);
+      doc.save('itinerary.pdf');
+    });
+  </script>
+  <script id="pdf-day-template" type="text/x-handlebars-template">
+    Day {{day}} - {{title}} ({{date}})
+    {{#each images}}
+      [Image]
+    {{/each}}
+    {{description}}
+    Hotel: {{hotel}}
+  </script>
+</body>
+</html>

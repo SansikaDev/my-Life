@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import 'workout_plans_screen.dart';
 import 'health_sync_screen.dart';
 import 'workout_tracking_screen.dart';
+import 'meal_plan_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -557,7 +558,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildMealsTab() {
-    return const Center(child: Text('Meals Tab'));
+    return const MealPlanScreen();
   }
 
   Widget _buildCoachesTab() {

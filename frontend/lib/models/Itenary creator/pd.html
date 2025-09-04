@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ayubowan Travels – Itinerary Builder</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    body{font-family:'Inter',sans-serif}
+    .break-inside-avoid{break-inside:avoid;page-break-inside:avoid}
+    .page-footer{font-size:.75rem;color:#6b7280;text-align:center;margin-top:2rem;padding-bottom:1rem}
+    textarea{resize:vertical}
+  </style>
+</head>
+<body class="bg-gray-100 p-4">
+  <div class="max-w-5xl mx-auto">
+    <h1 class="text-3xl font-bold text-center mb-6 text-blue-700">Ayubowan Travels – Itinerary Builder</h1>
+
+    <form id="itineraryForm" class="bg-white p-6 rounded-xl shadow-md space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input id="tourName" placeholder="Tour Name" required class="p-2 border rounded"/>
+        <input id="customerName" placeholder="Customer Name" required class="p-2 border rounded"/>
+        <input id="dateRange" placeholder="Date Range (e.g. 15 Jul – 20 Jul 2025)" required class="p-2 border rounded col-span-2"/>
+      </div>
+
+      <div class="border p-4 rounded-lg bg-yellow-50">
+        <h2 class="text-lg font-bold mb-2">Quotation – (U.S. DOLLARS)</h2>
+        <input id="quotationPriceLine" placeholder="Price Per Person Sharing Double/Twin Room..." class="w-full p-2 border rounded mb-2"/>
+        <input id="quotationPriceAmount" placeholder="Price (e.g. USD 3960.00 per person)" class="w-full p-2 border rounded mb-4"/>
+        <div class="flex items-center gap-2 mb-2">
+          <input id="quotationHeaderColor" type="color" class="w-6 h-6">
+          <span class="text-sm">Header Color</span>
+        </div>
+        <textarea id="quotationBullets" placeholder="Quotation Notes (one per line)" rows="4" class="w-full p-2 border rounded"></textarea>
+      </div>
+
+      <div class="border p-4 rounded-lg bg-gray-50">
+        <h2 class="text-lg font-bold mb-2">Conditions Section</h2>
+        <textarea id="conditionsJSON" placeholder='[{"header":"Cancellation Policy","color":"#c2410c","points":["Full refund before Jan 5th","25% charge before Mar 4th"]}]' rows="6" class="w-full p-2 border rounded"></textarea>
+        <p class="text-sm text-gray-500 mt-1">Enter each condition group as JSON array. Use header, color and points.</p>
+      </div>
+
+      <div id="daysContainer" class="space-y-4"></div>
+
+      <div class="flex gap-3 flex-wrap">
+        <button type="button" onclick="addDay()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded">+ Add Day</button>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Generate Itinerary</button>
+      </div>
+    </form>
+
+    <div id="itineraryPreview" class="mt-10"></div>
+    <div class="text-center mt-4">
+      <button onclick="downloadPDF()" class="bg-pink-600 hover:bg-pink-700 text-white px-6 py-2 rounded">Download PDF</button>
+    </div>
+  </div>
+
+  <script>
+    let dayCount=0;
+    const colors=["blue","pink","green","amber","purple"];
+
+    function addDay(){
+      dayCount++;
+      const div=document.createElement('div');
+      div.className='p-4 border rounded-lg bg-gray-50';
+      div.innerHTML=`
+        <h2 class="text-lg font-semibold mb-2">Day ${dayCount}</h2>
+        <input placeholder="Day Title" class="w-full p-2 border rounded mb-2 day-title"/>
+        <textarea placeholder="Itinerary bullet points – one per line" rows="4" class="w-full p-2 border rounded mb-2 day-items"></textarea>
+        <textarea placeholder="Meal plan – one per line" rows="3" class="w-full p-2 border rounded mb-2 day-meals"></textarea>
+        <select class="p-2 border rounded mb-2 meal-color">
+          ${colors.map(c=>`<option value="text-${c}-600">${c.charAt(0).toUpperCase()+c.slice(1)}</option>`).join('')}
+        </select>
+        <input placeholder="Hotel info" class="w-full p-2 border rounded mb-2 day-hotel"/>
+        <input placeholder="Image URLs (comma separated)" class="w-full p-2 border rounded mb-2 day-images"/>
+        <label class="text-sm font-medium mr-2">Text color:</label>
+        <select class="p-2 border rounded day-color">
+          ${colors.map(c=>`<option value="text-${c}-600">${c.charAt(0).toUpperCase()+c.slice(1)}</option>`).join('')}
+        </select>`;
+      document.getElementById('daysContainer').appendChild(div);
+    }
+
+    document.getElementById('itineraryForm').addEventListener('submit',e=>{
+      e.preventDefault();
+      const tour=document.getElementById('tourName').value.trim();
+      const cust=document.getElementById('customerName').value.trim();
+      const date=document.getElementById('dateRange').value.trim();
+      const priceLine=document.getElementById('quotationPriceLine').value.trim();
+      const priceAmount=document.getElementById('quotationPriceAmount').value.trim();
+      const quoteHeaderColor=document.getElementById('quotationHeaderColor').value;
+      const quoteBullets=document.getElementById('quotationBullets').value.trim().split('\n').map(b=>`<li>${b}</li>`).join('');
+      const days=[...document.querySelectorAll('#daysContainer>div')];
+      const conditionRaw=document.getElementById('conditionsJSON').value.trim();
+
+      let html=`<div id="itinerary" class="bg-white p-8 rounded-xl shadow-xl text-gray-800">`+
+      `<h1 class="text-3xl font-bold text-blue-600 mb-2">Ayubowan Travels</h1>`+
+      `<p class="text-xl font-semibold">Tour: <span class="text-pink-600">${tour}</span></p>`+
+      `<p class="text-sm text-gray-600 mb-6">Customer: ${cust} | ${date}</p>`;
+
+      days.forEach((d,idx)=>{
+        const title=d.querySelector('.day-title').value;
+        const bullets=d.querySelector('.day-items').value.split('\n').filter(x=>x).map(b=>`<li>${b}</li>`).join('');
+        const mealLines=d.querySelector('.day-meals').value.split('\n').filter(x=>x);
+        const mealColor=d.querySelector('.meal-color').value;
+        const meals=mealLines.map(m=>`<li class="${mealColor}">${m}</li>`).join('');
+        const hotel=d.querySelector('.day-hotel').value;
+        const imgs=d.querySelector('.day-images').value.split(',').map(u=>u.trim()).filter(Boolean);
+        const color=d.querySelector('.day-color').value;
+
+        html+=`<div class="day-block mb-10 break-inside-avoid">`+
+          `<h2 class="text-xl font-semibold ${color} mb-1">Day ${idx+1}: ${title}</h2>`+
+          `<ul class="list-disc pl-5 text-sm mb-2">${bullets}</ul>`+
+          (meals?`<p class="text-sm font-semibold mt-2">Meals:</p><ul class="list-disc pl-5 text-sm">${meals}</ul>`:'')+
+          (hotel?`<p class="text-sm italic mt-1">Hotel: ${hotel}</p>`:'')+
+          (imgs.length?`<div class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">${imgs.map(u=>`<img src='${u}' class='w-full h-32 object-cover rounded-lg shadow'/>`).join('')}</div>`:'')+
+        `</div>`;
+      });
+
+      html+=`<div class="break-inside-avoid border border-yellow-400 bg-yellow-50 p-4 rounded-lg mt-8">`+
+        `<h2 class="text-xl font-bold mb-2" style="color:${quoteHeaderColor}">Quotation & Conditions (U.S. DOLLARS)</h2>`+
+        `<p class="text-sm font-semibold">${priceLine}</p>`+
+        `<p class="text-sm mb-2">${priceAmount}</p>`+
+        `<ul class="list-disc pl-5 text-sm text-gray-700">${quoteBullets}</ul>`+
+      `</div>`;
+
+      try {
+        const conditionBlocks = JSON.parse(conditionRaw);
+        conditionBlocks.forEach(group => {
+          const bullets = group.points.map(b => `<li>${b}</li>`).join('');
+          html += `<div class="mt-6 break-inside-avoid">
+            <h3 class="text-lg font-bold mb-2" style="color:${group.color}">${group.header}</h3>
+            <ul class="list-disc pl-5 text-sm text-gray-700">${bullets}</ul>
+          </div>`;
+        });
+      } catch (err) {
+        console.error("Invalid JSON in Conditions Section");
+      }
+
+      html+=`<div class="page-footer">📍 Ayubowan Travels | +94 77 123 4567 | info@ayubowan.lk</div></div>`;
+      document.getElementById('itineraryPreview').innerHTML=html;
+    });
+
+    function downloadPDF(){
+      const el=document.getElementById('itinerary');
+      if(!el)return alert('Generate the itinerary first!');
+      html2pdf().set({
+        margin:[10,10,20,10],
+        filename:'ayubowan_itinerary.pdf',
+        image:{type:'jpeg',quality:0.98},
+        html2canvas:{scale:2,useCORS:true,allowTaint:true,scrollY:0},
+        jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+        pagebreak:{mode:['avoid-all','css','legacy']}
+      }).from(el).save();
+    }
+  </script>
+</body>
+</html>

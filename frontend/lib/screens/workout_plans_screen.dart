@@ -14,6 +14,9 @@ class WorkoutPlansScreen extends StatefulWidget {
 class _WorkoutPlansScreenState extends State<WorkoutPlansScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  
   String _selectedCategory = 'All';
   String _selectedDifficulty = 'All';
 
@@ -24,11 +27,25 @@ class _WorkoutPlansScreenState extends State<WorkoutPlansScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+    _animationController.forward();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -146,13 +163,16 @@ class _WorkoutPlansScreenState extends State<WorkoutPlansScreen>
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: filteredPlans.length,
-      itemBuilder: (context, index) {
-        final plan = filteredPlans[index];
-        return _buildPlanCard(plan);
-      },
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: filteredPlans.length,
+        itemBuilder: (context, index) {
+          final plan = filteredPlans[index];
+          return _buildPlanCard(plan);
+        },
+      ),
     );
   }
 

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ayubowan Travels – Itinerary</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>body{font-family:'Inter',sans-serif}</style>
+</head>
+<body class="bg-gray-100 p-6 print:p-0">
+
+  <!-- ── Image‑URL input (top) ─────────────────────────────── -->
+  <div class="max-w-3xl mx-auto mb-6">
+    <div class="flex flex-col sm:flex-row items-center gap-2">
+      <input id="imageUrlInput" type="text" placeholder="Paste direct image URL and hit Add…"
+             class="flex-1 p-2 border rounded-lg shadow-sm text-sm text-gray-700" />
+      <button onclick="addImageFromUrl()"
+              class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded shadow">
+        ➕ Add to Day 1
+      </button>
+    </div>
+    <p class="mt-1 text-xs text-gray-500">
+      (Use a <i>direct</i> image URL. If Google Images, right‑click → “Open image in new tab” and copy that URL.)
+    </p>
+  </div>
+
+  <!-- ── Itinerary content ─────────────────────────────────── -->
+  <div id="itinerary"
+       class="max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-xl text-gray-800 print:shadow-none print:rounded-none print:p-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-3xl font-bold text-blue-600">Ayubowan Travels</h1>
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABFklEQVR42mJ8//8/AymAiSTgAqqamv5BoA8h9T3nBgoMDAx/BoKEh+V8Dw5cPXD0PwfgczMbGy/j9YH4vHnz5p+HDJ2fn48iYzdu3ADh9OnT/xkZGaUQQTzc9PR2x3uYg+MHMwDCrKyMrIAjAgRMZ+fHxEZGRkAc+uXL1/cGCBsbG3oAHPD58+cXExFTEoAYMGcKysrHR8fFxHRz9X8KgsKohEj2HgMGD+HgYMDNzCypQqAKiB2TiJMzMzAz6gJ+bk5McDAxvAqGrq1tCQECRgFIsDgeQsDAzMcgByYEMHrrYCLQAAAABJRU5ErkJggg=="
+           alt="Logo" class="h-12 w-12 rounded-full shadow-md">
+    </div>
+
+    <p class="text-xl font-semibold mb-2">
+      Tour Name: <span class="text-pink-600">Cultural Wonders of Sri Lanka</span>
+    </p>
+    <p class="text-sm text-gray-500 mb-8">
+      Customer: John Doe &nbsp;|&nbsp; Date: July 15 – 20, 2025
+    </p>
+
+    <!-- DAY 1 -->
+    <div class="space-y-4 mb-10">
+      <div class="border-l-4 border-blue-500 pl-4">
+        <h2 class="text-xl font-semibold">Day 1 – Arrival in Colombo ✈️</h2>
+        <p class="text-sm">
+          Airport pickup, hotel check‑in, evening city walk, and dinner at Ministry of Crab.
+        </p>
+      </div>
+
+      <!-- Day‑1 image grid -->
+      <div id="day1Images"
+           class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 place-items-center">
+        <!-- starter images -->
+        <div class="w-full h-32 overflow-hidden rounded-lg shadow-md">
+          <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=300&q=80"
+               alt="Colombo" class="w-full h-full object-cover">
+        </div>
+        <div class="w-full h-32 overflow-hidden rounded-lg shadow-md">
+          <img src="https://images.unsplash.com/photo-1551926764-96a2d0b62ee8?auto=format&fit=crop&w=300&q=80"
+               alt="Pegasus Reef" class="w-full h-full object-cover">
+        </div>
+      </div>
+    </div>
+
+    <!-- DAY 2 (unchanged, sample images) -->
+    <div class="space-y-4 mb-10">
+      <div class="border-l-4 border-emerald-500 pl-4">
+        <h2 class="text-xl font-semibold">Day 2 – Sigiriya Rock Fortress 🏯</h2>
+        <p class="text-sm">
+          Morning hike to the top of Sigiriya, village lunch, cultural show in the evening.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 place-items-center">
+        <div class="w-full h-32 overflow-hidden rounded-lg shadow-md">
+          <img src="https://images.unsplash.com/photo-1524732815165-9bfc7f70b648?auto=format&fit=crop&w=300&q=80"
+               alt="Sigiriya" class="w-full h-full object-cover">
+        </div>
+        <div class="w-full h-32 overflow-hidden rounded-lg shadow-md">
+          <img src="https://images.unsplash.com/photo-1560448072-59ac8379e176?auto=format&fit=crop&w=300&q=80"
+               alt="Lion Rock" class="w-full h-full object-cover">
+        </div>
+      </div>
+    </div>
+
+    <!-- DAY 3 (unchanged, sample images) -->
+    <div class="space-y-4 mb-10">
+      <div class="border-l-4 border-pink-500 pl-4">
+        <h2 class="text-xl font-semibold">Day 3 – Kandy City Tour 🎡</h2>
+        <p class="text-sm">
+          Temple of the Tooth, spice garden, tea factory visit, Kandyan dance show at night.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 place-items-center">
+        <div class="w-full h-32 overflow-hidden rounded-lg shadow-md">
+          <img src="https://images.unsplash.com/photo-1500048993953-71d0079c4891?auto=format&fit=crop&w=300&q=80"
+               alt="Temple of the Tooth" class="w-full h-full object-cover">
+        </div>
+        <div class="w-full h-32 overflow-hidden rounded-lg shadow-md">
+          <img src="https://images.unsplash.com/photo-1531870190089-69e54d8854be?auto=format&fit=crop&w=300&q=80"
+               alt="Tea Factory" class="w-full h-full object-cover">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- footer always prints -->
+  <footer class="max-w-3xl mx-auto mt-4 mb-8 text-sm text-gray-500 text-center print:mt-2 print:mb-2">
+    📍 Ayubowan Travels &nbsp;|&nbsp; +94 77 123 4567 &nbsp;|&nbsp; info@ayubowan.lk
+  </footer>
+
+  <!-- Download button -->
+  <div class="max-w-3xl mx-auto text-center">
+    <button onclick="downloadPDF()"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition">
+      Download Itinerary PDF
+    </button>
+  </div>
+
+  <!-- html2pdf -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <script>
+    /* --- Add image from URL (fetch -> Base64) ------------------------ */
+    async function addImageFromUrl() {
+      const url = document.getElementById('imageUrlInput').value.trim();
+      if (!url) return alert('Please paste a direct image URL.');
+
+      try {
+        const base64 = await toBase64(url);      // fetch + convert
+        injectIntoDay1(base64);                  // add to DOM
+        document.getElementById('imageUrlInput').value = ''; // clear field
+      } catch (err) {
+        alert('❌  Could not load that image (likely CORS‑blocked).');
+        console.error(err);
+      }
+    }
+
+    // fetch -> blob -> FileReader -> data URI
+    function toBase64(imageUrl) {
+      return fetch(imageUrl, { mode: 'cors' })
+        .then(r => {
+          if (!r.ok) throw new Error('Fetch failed');
+          return r.blob();
+        })
+        .then(blob => new Promise((res, rej) => {
+          const reader = new FileReader();
+          reader.onloadend = () => res(reader.result);
+          reader.onerror = rej;
+          reader.readAsDataURL(blob);
+        }));
+    }
+
+    // append new <img> card to Day 1 grid
+    function injectIntoDay1(dataUri) {
+      const grid = document.getElementById('day1Images');
+      const wrapper = document.createElement('div');
+      wrapper.className = 'w-full h-32 overflow-hidden rounded-lg shadow-md';
+
+      const img = document.createElement('img');
+      img.src = dataUri;
+      img.alt = 'User image';
+      img.className = 'w-full h-full object-cover';
+
+      wrapper.appendChild(img);
+      grid.appendChild(wrapper);
+    }
+
+    /* --- PDF export ----------------------------------------------- */
+    function downloadPDF() {
+      const element = document.getElementById('itinerary');
+      html2pdf().set({
+        margin: 0,
+        filename: 'ayubowan_itinerary.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, allowTaint: true, scrollY: 0 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      }).from(element).save();
+    }
+  </script>
+</body>
+</html>

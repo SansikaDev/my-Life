@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ayubowan Travels – Itinerary Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      .break-inside-avoid {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      #itinerary {
+        background: repeating-conic-gradient(
+          45deg,
+          #f084b7,
+          #f084b7 30px,
+          #f45ca4 30px,
+          #f45ca4 60px,
+          #8956a1 60px,
+          #8956a1 90px,
+          #e0bcc3 90px,
+          #e0bcc3 120px
+        );
+        position: relative;
+      }
+
+      /* Light overlay to make text readable */
+      #itinerary::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: white;
+        opacity: 0.9;
+        z-index: 0;
+      }
+
+      #itinerary > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .page-footer {
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-align: center;
+        margin-top: 2rem;
+        padding-bottom: 1rem;
+      }
+
+      .break-inside-avoid {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      /* Faded logo on all pages */
+      .logo-overlay {
+        position: absolute;
+        bottom: 40px;
+        right: 40px;
+        opacity: 0.05;
+        width: 150px;
+        z-index: 0;
+      }
+
+      textarea {
+        resize: vertical;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 p-4">
+    <div class="max-w-5xl mx-auto">
+      <h1 class="text-3xl font-bold text-center mb-6 text-blue-700">
+        Ayubowan Travels Internationl (Pvt) Ltd. – Itinerary Builder
+      </h1>
+
+      <form
+        id="itineraryForm"
+        class="bg-white p-6 rounded-xl shadow-md space-y-4"
+      >
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input
+            id="tourName"
+            placeholder="Tour Name"
+            required
+            class="p-2 border rounded"
+          />
+          <input
+            id="customerName"
+            placeholder="Customer Name"
+            required
+            class="p-2 border rounded"
+          />
+          <input
+            id="dateRange"
+            placeholder="Date Range (e.g. 15 Jul – 20 Jul 2025)"
+            required
+            class="p-2 border rounded col-span-2"
+          />
+        </div>
+
+        <div class="border p-4 rounded-lg bg-yellow-50">
+          <h2 class="text-lg font-bold mb-2">Quotation – (U.S. DOLLARS)</h2>
+          <div id="quotationContainer" class="space-y-4"></div>
+          <br />
+          <button
+            type="button"
+            onclick="addQuotationItem()"
+            class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-sm"
+          >
+            + Add Quotation Item
+          </button>
+        </div>
+
+        <div class="border p-4 rounded-lg bg-gray-50">
+          <h2 class="text-lg font-bold mb-2">Conditions Section</h2>
+          <div id="conditionsContainer" class="space-y-4"></div>
+          <br />
+          <button
+            type="button"
+            onclick="addConditionItem()"
+            class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded-full text-sm"
+          >
+            + Add Condition Block
+          </button>
+        </div>
+
+        <div id="daysContainer" class="space-y-4"></div>
+
+        <div class="flex gap-3 flex-wrap">
+          <button
+            type="button"
+            onclick="addDay()"
+            class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-2xl"
+          >
+            + Add Day
+          </button>
+          <button
+            type="submit"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-2xl"
+          >
+            Generate Itinerary
+          </button>
+        </div>
+      </form>
+
+      <div id="itineraryPreview" class="mt-10"></div>
+      <div class="text-center mt-4">
+        <button
+          onclick="downloadPDF()"
+          class="bg-pink-600 hover:bg-pink-700 text-white px-6 py-2 rounded-2xl"
+        >
+          Download PDF
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const colors = ["blue", "pink", "green", "amber", "purple"];
+      let dayCount = 0;
+
+      function addDay() {
+        const div = document.createElement("div");
+        div.className = "p-4 border rounded-lg bg-gray-50 relative";
+        div.innerHTML = `
+          <button type="button" onclick="this.parentElement.remove()" class="absolute top-2 right-2 bg-red-100 hover:bg-red-200 text-red-800 px-2 py-1 rounded-full text-xs">Delete</button>
+          <h2 class="text-lg font-semibold mb-2">Day ${++dayCount}</h2>
+          <input placeholder="Day Title" class="w-full p-2 border rounded mb-2 day-title"/>
+          <textarea placeholder="Itinerary bullet points – one per line" rows="4" class="w-full p-2 border rounded mb-2 day-items"></textarea>
+          <textarea placeholder="Meal plan – one per line" rows="3" class="w-full p-2 border rounded mb-2 day-meals"></textarea>
+          <select class="p-2 border rounded mb-2 meal-color">${colors
+            .map((c) => `<option value="text-${c}-600">${c}</option>`)
+            .join("")}</select>
+          <input placeholder="Hotel info" class="w-full p-2 border rounded mb-2 day-hotel"/>
+          <input type="file" multiple accept="image/*" class="w-full p-2 border rounded mb-2 day-images"/>
+          <div class="image-previews grid grid-cols-2 md:grid-cols-3 gap-3 mt-2"></div>
+          <label class="text-sm font-medium mr-2">Text color:</label>
+          <select class="p-2 border rounded day-color">${colors
+            .map((c) => `<option value="text-${c}-600">${c}</option>`)
+            .join("")}</select>
+        `;
+
+        document.getElementById("daysContainer").appendChild(div);
+
+        // handle image uploads & previews
+        const fileInput = div.querySelector(".day-images");
+        const previewContainer = div.querySelector(".image-previews");
+
+        fileInput.addEventListener("change", () => {
+          previewContainer.innerHTML = ""; // clear previous
+          const files = fileInput.files;
+
+          if (files.length === 0) return;
+
+          Array.from(files).forEach((file) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const img = document.createElement("img");
+              img.src = e.target.result;
+              img.className = "w-full h-32 object-cover rounded-lg shadow";
+              previewContainer.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+          });
+        });
+      }
+
+      function addQuotationItem() {
+        const div = document.createElement("div");
+        div.className = "border p-3 rounded bg-white relative";
+        div.innerHTML = `
+          <button type="button" onclick="this.parentElement.remove()" class="absolute top-2 right-2 bg-red-100 hover:bg-red-200 text-red-800 px-2 py-1 rounded-full text-xs">Delete</button>
+          <input placeholder="Price Description" class="w-full p-2 border rounded mb-2 quote-desc text-lg font-semibold"/>
+          <input placeholder="Price (e.g. USD 3960.00 per person)" class="w-full p-2 border rounded mb-2 quote-price text-lg font-bold"/>`;
+        document.getElementById("quotationContainer").appendChild(div);
+      }
+
+      function addConditionItem() {
+        const div = document.createElement("div");
+        div.className = "border p-3 rounded bg-white relative";
+        div.innerHTML = `
+          <button type="button" onclick="this.parentElement.remove()" class="absolute top-2 right-2 bg-red-100 hover:bg-red-200 text-red-800 px-2 py-1 rounded-full text-xs">Delete</button>
+          <input placeholder="Condition Header" class="w-full p-2 border rounded mb-2 condition-header"/>
+          <input type="color" class="condition-color mb-2"/>
+          <textarea placeholder="Bullet points (one per line)" rows="3" class="w-full p-2 border rounded condition-bullets"></textarea>`;
+        document.getElementById("conditionsContainer").appendChild(div);
+      }
+
+      document
+        .getElementById("itineraryForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          const tour = document.getElementById("tourName").value;
+          const customer = document.getElementById("customerName").value;
+          const dateRange = document.getElementById("dateRange").value;
+
+          const days = document.querySelectorAll("#daysContainer > div");
+          const quotes = document.querySelectorAll("#quotationContainer > div");
+          const conditions = document.querySelectorAll(
+            "#conditionsContainer > div"
+          );
+
+          let html = `<div id="itinerary" class="bg-white p-8 rounded-xl shadow-xl text-gray-800">`;
+          html += `<h1 class="text-3xl font-bold text-blue-600 mb-2">Ayubowan Travels</h1>`;
+          html += `<p class="text-xl font-semibold">Tour: <span class="text-pink-600">${tour}</span></p>`;
+          html += `<p class="text-sm text-gray-600 mb-6">Customer: ${customer} | ${dateRange}</p>`;
+
+          days.forEach((day, idx) => {
+            const title = day.querySelector(".day-title").value;
+            const items = day
+              .querySelector(".day-items")
+              .value.split("\n")
+              .filter(Boolean)
+              .map((i) => `<li>${i}</li>`)
+              .join("");
+            const meals = day
+              .querySelector(".day-meals")
+              .value.split("\n")
+              .filter(Boolean)
+              .map(
+                (m) =>
+                  `<li class="${
+                    day.querySelector(".meal-color").value
+                  }">${m}</li>`
+              )
+              .join("");
+            const hotel = day.querySelector(".day-hotel").value;
+
+            // get images from preview (already base64)
+            const previewImgs = day.querySelectorAll(".image-previews img");
+            const images = Array.from(previewImgs)
+              .map(
+                (img) =>
+                  `<img src="${img.src}" class="w-full h-32 object-cover rounded-lg shadow"/>`
+              )
+              .join("");
+
+            const color = day.querySelector(".day-color").value;
+
+            html += `<div class="mb-8 break-inside-avoid">`;
+            html += `<h2 class="text-xl font-bold ${color}">Day ${
+              idx + 1
+            }: ${title}</h2>`;
+            html += `<ul class="list-disc pl-5 text-sm">${items}</ul>`;
+            if (meals)
+              html += `<p class="mt-2 font-semibold text-sm">Meals:</p><ul class="list-disc pl-5 text-sm">${meals}</ul>`;
+            if (hotel)
+              html += `<p class="italic text-sm mt-1">Hotel: ${hotel}</p>`;
+            if (images)
+              html += `<div class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">${images}</div>`;
+            html += `</div>`;
+          });
+
+          if (quotes.length > 0) {
+            html += `<div class="break-inside-avoid border border-yellow-400 bg-yellow-50 p-4 rounded-lg mt-8">`;
+            html += `<h2 class="text-xl font-bold mb-2">Quotation</h2>`;
+            quotes.forEach((q) => {
+              const desc = q.querySelector(".quote-desc").value;
+              const price = q.querySelector(".quote-price").value;
+
+              html += `
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+                <p class="text-lg sm:text-xl font-bold" style="max-width: 100%;">${desc}</p>
+                <p class="text-lg sm:text-xl font-bold text-center text-gray-900">${price}</p>
+              </div>
+            `;
+            });
+            html += `</div>`;
+          }
+
+          conditions.forEach((c) => {
+            const header = c.querySelector(".condition-header").value;
+            const color = c.querySelector(".condition-color").value;
+            const bullets = c
+              .querySelector(".condition-bullets")
+              .value.split("\n")
+              .filter(Boolean)
+              .map((b) => `<li>${b}</li>`)
+              .join("");
+            html += `<div class="mt-6 break-inside-avoid">
+            <h3 class="text-lg font-bold mb-2" style="color:${color}">${header}</h3>
+            <ul class="list-disc pl-5 text-sm text-gray-700">${bullets}</ul>
+          </div>`;
+          });
+
+          html += `<div class="page-footer">📍 Ayubowan Travels | +94 77 123 4567 | info@ayubowan.lk</div></div>`;
+
+          document.getElementById("itineraryPreview").innerHTML = html;
+        });
+
+      async function inlineImages(container) {
+        const imgs = container.querySelectorAll("img");
+        const promises = [...imgs].map(async (img) => {
+          if (img.src.startsWith("data:")) return; // already base64
+          try {
+            const res = await fetch(img.src, { mode: "cors" });
+            const blob = await res.blob();
+            const reader = new FileReader();
+            img.crossOrigin = "anonymous";
+            return new Promise((resolve) => {
+              reader.onloadend = () => {
+                img.src = reader.result; // convert to base64
+                resolve();
+              };
+              reader.readAsDataURL(blob);
+            });
+          } catch (e) {
+            console.warn("Image inline failed:", img.src, e);
+          }
+        });
+        await Promise.all(promises);
+      }
+
+      async function downloadPDF() {
+        const el = document.getElementById("itinerary");
+        if (!el) return alert("Generate the itinerary first!");
+
+        // 1️⃣ Make sure all remote imgs are safely inlined
+        await inlineImages(el);
+
+        // Add logo if missing
+        if (!document.querySelector(".logo-overlay")) {
+          const logo = document.createElement("img");
+          logo.src =
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABvCAYAAABck8Y9AAAAAXNSR0IArs4c6QAAAPBlWElmTU0AKgAAAAgABwESAAMAAAABAAEAAAEaAAUAAAABAAAAYgEbAAUAAAABAAAAagEoAAMAAAABAAIAAAExAAIAAAAfAAAAcgEyAAIAAAAUAAAAkodpAAQAAAABAAAApgAAAAAAAACWAAAAAQAAAJYAAAABQWRvYmUgUGhvdG9zaG9wIDI0LjIgKFdpbmRvd3MpAAAyMDI1OjA2OjE0IDExOjM0OjMyAAAEkAQAAgAAABQAAADcoAEAAwAAAAEAAQAAoAIABAAAAAEAAABAoAMABAAAAAEAAABvAAAAADIwMjU6MDY6MTQgMTE6MzQ6MzIAWDfJPwAAAAlwSFlzAAAXEgAAFxIBZ5/SUgAACZBpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IlhNUCBDb3JlIDYuMC4wIj4KICAgPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAgICAgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIgogICAgICAgICAgICB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgICAgICAgICB4bWxuczpzdEV2dD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlRXZlbnQjIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgICAgICAgICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIj4KICAgICAgICAgPGRjOmZvcm1hdD5pbWFnZS9wbmc8L2RjOmZvcm1hdD4KICAgICAgICAgPHhtcDpNb2RpZnlEYXRlPjIwMjUtMDYtMTRUMTE6MzQ6MzIrMDU6MzA8L3htcDpNb2RpZnlEYXRlPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPkFkb2JlIFBob3Rvc2hvcCAyNC4yIChXaW5kb3dzKTwveG1wOkNyZWF0b3JUb29sPgogICAgICAgICA8eG1wOkNyZWF0ZURhdGU+MjAyNS0wNi0xNFQxMTozNDozMiswNTozMDwveG1wOkNyZWF0ZURhdGU+CiAgICAgICAgIDx4bXA6TWV0YWRhdGFEYXRlPjIwMjUtMDYtMTRUMTE6MzQ6MzIrMDU6MzA8L3htcDpNZXRhZGF0YURhdGU+CiAgICAgICAgIDx4bXBNTTpIaXN0b3J5PgogICAgICAgICAgICA8cmRmOlNlcT4KICAgICAgICAgICAgICAgPHJkZjpsaSByZGY6cGFyc2VUeXBlPSJSZXNvdXJjZSI+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDpzb2Z0d2FyZUFnZW50PkFkb2JlIFBob3Rvc2hvcCAyNC4yIChXaW5kb3dzKTwvc3RFdnQ6c29mdHdhcmVBZ2VudD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAyNS0wNi0xNFQxMTozNDozMiswNTozMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0Omluc3RhbmNlSUQ+eG1wLmlpZDo3YWNiY2JiYi1iYTIwLWFiNGMtOTRlNS1mMGMwMGY2MzBiOWU8L3N0RXZ0Omluc3RhbmNlSUQ+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDphY3Rpb24+Y3JlYXRlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICA8L3JkZjpsaT4KICAgICAgICAgICAgICAgPHJkZjpsaSByZGY6cGFyc2VUeXBlPSJSZXNvdXJjZSI+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDpzb2Z0d2FyZUFnZW50PkFkb2JlIFBob3Rvc2hvcCAyNC4yIChXaW5kb3dzKTwvc3RFdnQ6c29mdHdhcmVBZ2VudD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmNoYW5nZWQ+Lzwvc3RFdnQ6Y2hhbmdlZD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAyNS0wNi0xNFQxMTozNDozMiswNTozMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0Omluc3RhbmNlSUQ+eG1wLmlpZDoyMzI2ODI5Zi1lY2Q2LWVlNDEtYWNmOS1mNDVhN2E0OTYxMTk8L3N0RXZ0Omluc3RhbmNlSUQ+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDphY3Rpb24+c2F2ZWQ8L3N0RXZ0OmFjdGlvbj4KICAgICAgICAgICAgICAgPC9yZGY6bGk+CiAgICAgICAgICAgIDwvcmRmOlNlcT4KICAgICAgICAgPC94bXBNTTpIaXN0b3J5PgogICAgICAgICA8eG1wTU06T3JpZ2luYWxEb2N1bWVudElEPnhtcC5kaWQ6N2FjYmNiYmItYmEyMC1hYjRjLTk0ZTUtZjBjMDBmNjMwYjllPC94bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpEb2N1bWVudElEPmFkb2JlOmRvY2lkOnBob3Rvc2hvcDo3NmU0Zjg2OC05NTMxLTI3NGUtYmYzZS00YTZlY2ZkMWFiMDQ8L3htcE1NOkRvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpJbnN0YW5jZUlEPnhtcC5paWQ6MjMyNjgyOWYtZWNkNi1lZTQxLWFjZjktZjQ1YTdhNDk2MTE5PC94bXBNTTpJbnN0YW5jZUlEPgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8cGhvdG9zaG9wOkNvbG9yTW9kZT4zPC9waG90b3Nob3A6Q29sb3JNb2RlPgogICAgICAgICA8cGhvdG9zaG9wOkRvY3VtZW50QW5jZXN0b3JzPgogICAgICAgICAgICA8cmRmOkJhZz4KICAgICAgICAgICAgICAgPHJkZjpsaT5ERDA1OTFFRDUwOUExRjAxMDdCMjlCRDNBQzE1NTM3QjwvcmRmOmxpPgogICAgICAgICAgICA8L3JkZjpCYWc+CiAgICAgICAgIDwvcGhvdG9z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";
+          logo.className = "logo-overlay";
+          el.appendChild(logo);
+        }
+
+        // 2️⃣ Fire the PDF
+        html2pdf()
+          .set({
+            margin: [10, 10, 20, 10],
+            filename: "ayubowan_itinerary.pdf",
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: {
+              scale: 2,
+              useCORS: true,
+              allowTaint: false,
+              scrollY: 0,
+            },
+            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+            pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+          })
+          .from(el)
+          .save();
+      }
+    </script>
+  </body>
+</html>
